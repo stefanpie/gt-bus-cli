@@ -11,6 +11,8 @@ from rich.padding import Padding
 
 
 from pprint import pprint as pp
+import difflib
+
 
 
 def routes(cli_args):
@@ -54,6 +56,11 @@ def stops(cli_args):
         new_stop["position"] = stop["position"]
         return new_stop
     stop_data_new = list(map(map_stop_data, stop_data))
+    
+    if cli_args["stop"]:
+        stop_data_new = [
+            stop for stop in stop_data_new if difflib.SequenceMatcher(None, stop["name"], cli_args["stop"]).ratio()>0.5]
+
     stop_data_new.sort(key=lambda x: (x["routeName"], int(x["position"])))
 
     table = Table(title="Stops", show_header=True)
@@ -85,7 +92,7 @@ def messages(cli_args):
             )
         console.print(Panel(group, expand=True))
 
-    
+
 
 def buses(cli_args):
     r = requests.get(
@@ -93,7 +100,6 @@ def buses(cli_args):
     buses_data = r.json()
     buses_data = list(buses_data["buses"].values())
     buses_data = [b[0] for b in buses_data]
-    pp(buses_data)
 
     def map_bus_data(bus):
         new_bus = OrderedDict()
@@ -143,6 +149,8 @@ if __name__ == '__main__':
     parser_routes = subparsers.add_parser('routes', help='...')
 
     parser_stops = subparsers.add_parser('stops', help='...')
+    parser_stops.add_argument("-s", "--stop", help="Filter by stop name", type=str, default=None)
+
     parser_buses = subparsers.add_parser('buses', help='...')
     parser_eta = subparsers.add_parser('eta', help='...')
 
